@@ -1,5 +1,6 @@
 // file: src/app/(dashboard)/layout.tsx
 import React from "react";
+import { ModeToggle } from "@/components/mode-toggle";
 
 export default function DashboardLayout({
   children,
@@ -24,7 +25,9 @@ export default function DashboardLayout({
             {/* Page title will go here */}
             Home
           </div>
-          <div>{/* Header right-side controls will go here */}</div>
+          <div>
+            <ModeToggle />
+          </div>
         </header>
 
         {/* Page Content */}
