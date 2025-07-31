@@ -13,16 +13,17 @@ All data is stored and synced in real-time via a Supabase backend. The applicati
 ## Core Features (Current)
 
 - **User Management:**
-  - **User List:** A responsive, card-based grid displaying all users, grouped by team and sorted alphabetically. Each card shows the user's DiceBear-generated avatar, display name, and role.
+  - **User List:** A responsive, card-based grid displaying all users, grouped by team and sorted alphabetically. Each card is a link to that user's "Standup Notes" page.
   - **Create User:** A dedicated form for creating new users with predefined dropdowns for 'Team' and 'Role' to ensure data consistency.
 - **Dynamic Dashboard:**
+  - **Dynamic Header:** The main header dynamically displays the title of the current page.
   - **"Login As" User Switcher:** A dropdown in the header allows for quickly switching the context of the dashboard to any user in the database. The selected user state is persisted across pages via URL query parameters.
-  - **Conditional Navigation:** User-specific navigation links (like "Standup Notes") automatically appear in the sidebar only when a user is selected.
+  - **Conditional Navigation:** User-specific navigation links automatically appear in the sidebar only when a user is selected.
 - **Standup Notes:**
-  - A dedicated page for a selected user to log their daily standup notes.
-  - The form includes fields for yesterday's accomplishments, today's tasks, blockers, and other learnings.
-  - The form intelligently "upserts" data, allowing a user to create a new note or update an existing note for the current day seamlessly.
-  - The form is pre-populated with any existing data for the current day, allowing for easy edits.
+  - A dedicated page for a selected user to log and view their standup notes.
+  - **Dynamic Note Form:** A form that allows creating or editing notes for any selected date. It is pre-populated with any existing data for the selected day.
+  - **Past Notes Widget:** A scrollable list that displays all of a user's previous notes, sorted by date, with alternating background colors for readability.
+  - **Real-time Updates:** After saving a note, both the form and the past notes list update instantly with the latest data without a full page reload.
 - **Modern UI/UX:**
   - Built with the clean and accessible **shadcn/ui** component library.
   - Includes a **Light/Dark Mode** theme toggle.
@@ -71,7 +72,7 @@ Follow these instructions to get the project running on your local machine for d
 
     - Create a new file named `.env.local` in the root of the project.
     - Find your API keys in your Supabase project dashboard under `Settings > API`.
-    - Copy the contents of `.env.example` into `.env.local` and fill in your credentials:
+    - Copy the contents of `package.json.example` (if it exists) or simply create the file with the following content:
 
     ```
     # .env.local
@@ -112,51 +113,63 @@ The primary method of state management is URL-based, leveraging **URL Query Para
 
 ### Data Fetching
 
-We use two distinct Supabase clients, defined in `src/lib/supabase/server.ts`:
+We use three distinct Supabase clients, physically separated to prevent build errors:
 
-1.  **`createSupabaseServerClientReadOnly()`:** A lightweight client using the core `@supabase/supabase-js` library. It does not access cookies and is used for fetching public data in Server Components.
-2.  **`createSupabaseServerClient()`:** An auth-aware client using `@supabase/ssr`. This client is designed to handle user sessions via cookies and will be used for protected actions and pages once full authentication is implemented.
+1.  **`src/lib/supabase/client.ts`:** Uses `createBrowserClient`. Exclusively for use in Client Components (`"use client"`).
+2.  **`src/lib/supabase/server.ts`:** Uses the core `createClient`. For use in Server Components to fetch data without accessing cookies.
+3.  **`src/lib/supabase/actions.ts`:** Uses `createServerClient` from `@supabase/ssr`. This client requires `cookies` and is exclusively for use in Server Actions that need authentication context.
 
 ### Server Actions
 
-Form submissions and data mutations are handled by [Next.js Server Actions](https://nextjs.org/docs/app/building-your-application/data-fetching/server-actions-and-mutations). This allows us to write secure, server-side code that can be called directly from our client components.
+Form submissions are handled by [Next.js Server Actions](https://nextjs.org/docs/app/building-your-application/data-fetching/server-actions-and-mutations).
 
-- We use the `useActionState` hook (formerly `useFormState`) to manage form state and handle responses from the server (success/error messages).
-- For actions that modify data, we use `revalidatePath()` to purge the server-side cache and `router.refresh()` to update the client UI with the new data.
+- We use the `useActionState` hook to manage form state and handle server responses.
+- After a successful data mutation, we call `router.refresh()` from the client to tell Next.js to re-fetch server-side data, ensuring the UI is up-to-date.
 
 ---
 
-## Challenges & Solutions
+## Architectural Patterns for AI Collaboration
 
-During development, we encountered several significant technical challenges. Documenting them provides insight into the final architecture.
+This section documents key architectural decisions and patterns established in the project. It serves as a guide for future development to ensure consistency.
 
-### 1. The Stubborn `searchParams` Rendering Error
+### Pattern 1: Dynamic Pages with Client-Side Logic
 
-- **Problem:** On dynamic pages that read URL parameters (like `/standup-notes`), Next.js repeatedly threw the error: `Route used searchParams.userId. searchParams should be awaited before using its properties.`
-- **Investigation:** This error persisted despite using the documented and correct syntax for accessing `searchParams` in a Server Component page. We attempted several fixes, including `export const dynamic = "force-dynamic"`, clearing the `.next` cache, and refactoring the prop-passing chain. None of these fully resolved the issue, indicating a deep, intermittent bug in the framework's rendering lifecycle for this specific use case.
-- **Solution:** We adopted a more robust architectural pattern. The `page.tsx` file was simplified into a **completely static shell** that renders a top-level **Client Component** (`StandupNotesView`) inside a `<Suspense>` boundary. This new component is then solely responsible for all dynamic logic: using the `useSearchParams` hook to read the URL, and `useEffect` to fetch data on the client side. This cleanly separates the static page route from the dynamic content, sidestepping the rendering bug entirely.
+- **Context:** Pages that depend heavily on URL parameters (`searchParams`) and require complex, interactive state management across multiple components (e.g., the Standup Notes page).
+- **Pattern:**
+  1.  The `page.tsx` file is a **minimal, static Server Component**. Its only job is to render a top-level Client Component within a `<Suspense>` boundary. It does not access `searchParams` or perform data fetching.
+  2.  The top-level Client Component (e.g., `StandupNotesView`) is the "conductor." It is marked with `"use client"` and uses the `useSearchParams` hook to read the URL.
+  3.  This conductor component manages all relevant state (`useState`) and fetches all necessary data for its children within a `useEffect` hook, using the client-side Supabase client.
+  4.  It renders child components, passing down the necessary data and state-updating functions as props.
+- **Rationale:** This pattern avoids a recurring and difficult-to-debug Next.js rendering error related to `searchParams` access in Server Components. It creates a clear boundary: the page route is static, but the content within is fully dynamic and controlled on the client.
 
-### 2. Stale Form State After Updates
+### Pattern 2: Refreshing Data Across Sibling Components
 
-- **Problem:** After successfully updating the Standup Note form, a success toast would appear, but the text areas on the form would revert to showing the old data, not the newly saved data. The new data would only appear after a full page navigation.
-- **Investigation:** This was caused by a classic React state issue. Calling `router.refresh()` correctly told the server to re-fetch the data and send it down, but the `StandupForm` client component, which used `defaultValue`, did not automatically update its internal DOM state from the new props.
-- **Solution:** We converted the form from using "uncontrolled" components (`defaultValue`) to **"controlled" components**.
-  1.  The `StandupForm` now holds the value of each text area in its own `useState`.
-  2.  The `<Textarea>` components use the `value` and `onChange` props to bind them to this state.
-  3.  A `useEffect` hook was added to explicitly listen for changes to the `existingNote` prop. When this prop changes (after `router.refresh()` completes), the effect fires and programmatically updates the local `useState` with the new data from the server, ensuring the UI is always in sync.
+- **Context:** After a form submission in one component (`StandupForm`), another sibling component (`PastNotesList`) needs to display the updated data.
+- **Pattern:**
+  1.  The parent "conductor" component (`StandupNotesView`) defines a piece of state called `refreshKey` (e.g., `const [refreshKey, setRefreshKey] = useState(0)`).
+  2.  It passes the `refreshKey` down as a prop to the component that needs to be refreshed (`<PastNotesList refreshKey={refreshKey} />`).
+  3.  It passes a callback function down to the component that triggers the change (`<StandupForm onNoteSaved={handleNoteSaved} />`).
+  4.  The `handleNoteSaved` callback simply increments the `refreshKey`: `setRefreshKey(k => k + 1)`.
+  5.  The `PastNotesList` component has a `useEffect` hook that includes `refreshKey` in its dependency array. When the key changes, the effect re-runs, and the component re-fetches its data.
+- **Rationale:** This is a clean, effective way to communicate between sibling components via their parent without using `router.refresh()` or more complex state management libraries.
 
-### 3. Supabase `upsert` Constraint Violation
+### Pattern 3: Controlled Components for Forms
 
-- **Problem:** When saving a Standup Note for a second time on the same day, the database threw a `duplicate key value violates unique constraint "unique_user_date"` error.
-- **Investigation:** The `upsert` command was behaving like a simple `insert`. The Supabase client requires explicit instructions on which constraint to use for conflict resolution.
-- **Solution:** We provided the `onConflict` option to the `upsert` call: `.upsert(noteData, { onConflict: 'user_id,date' })`. This tells Supabase to check for conflicts on the `(user_id, date)` combination and perform an update if one is found, resolving the issue.
+- **Context:** Forms that need to be pre-populated with data from the server and reflect updates immediately.
+- **Pattern:**
+  1.  Form input values (e.g., for a `<Textarea>`) are held in local `useState`.
+  2.  The state is initialized from props passed down from the parent: `useState(props.existingNote?.yesterday_text ?? "")`. The nullish coalescing operator (`?? ""`) is crucial to prevent "uncontrolled to controlled" errors.
+  3.  A `useEffect` hook syncs the local state if the incoming prop changes: `useEffect(() => { setText(props.existingNote?.yesterday_text ?? "") }, [props.existingNote]);`.
+  4.  The input element uses the `value` and `onChange` props to bind it to the local state.
+- **Rationale:** This pattern gives React full control over the form's state, preventing bugs where the UI becomes out of sync with the application's data after a save or refresh.
 
 ---
 
 ## Future Roadmap
 
-- Implement the "Past Notes" widget on the Standup Notes page.
 - Build the "GitHub PRs" page and widget.
 - Build the "Edit Profile" page and form.
-- Implement the custom-built tour feature.
-- Implement full user authentication (e.g., login with GitHub).
+- Build the "Summary" page and form.
+- Build the "AI Summary" widget.
+- Implement a tour/tutorial feature.
+- Implement full user authentication (e.g., login with Okta).
