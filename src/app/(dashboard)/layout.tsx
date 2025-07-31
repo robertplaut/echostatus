@@ -23,11 +23,13 @@ export default function DashboardLayout({
               <span className="text-xl font-bold">Echostatus</span>
             </Link>
           </div>
-          <nav className="flex-1 grid items-start px-2 text-sm font-medium lg:px-4">
-            <Suspense fallback={<div>Loading links...</div>}>
-              <NavLinks />
-            </Suspense>
-          </nav>
+          <div className="flex-1 overflow-auto py-2">
+            <nav className="grid items-start px-2 text-sm font-medium lg:px-4">
+              <Suspense fallback={<div>Loading links...</div>}>
+                <NavLinks />
+              </Suspense>
+            </nav>
+          </div>
         </div>
       </aside>
 
