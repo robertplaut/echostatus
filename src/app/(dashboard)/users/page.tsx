@@ -1,4 +1,5 @@
 // file: src/app/(dashboard)/users/page.tsx
+import Link from "next/link";
 import { createSupabaseServerClientReadOnly } from "@/lib/supabase/server";
 import { UserCard, type User } from "@/components/user-card";
 
@@ -48,7 +49,13 @@ export default async function UserListPage() {
           </h2>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {teamUsers.map((user) => (
-              <UserCard key={user.id} user={user} />
+              <Link
+                key={user.id}
+                href={`/standup-notes?userId=${user.id}`}
+                className="transition-shadow duration-200 ease-in-out hover:shadow-lg"
+              >
+                <UserCard user={user} />
+              </Link>
             ))}
           </div>
         </div>
