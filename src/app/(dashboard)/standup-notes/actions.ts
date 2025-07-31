@@ -1,7 +1,7 @@
 // file: src/app/(dashboard)/standup-notes/actions.ts
 "use server";
 
-import { createSupabaseServerClientReadOnly } from "@/lib/supabase/server";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 
 type FormState = {
@@ -13,7 +13,7 @@ export async function saveNote(
   prevState: FormState,
   formData: FormData
 ): Promise<FormState> {
-  const supabase = createSupabaseServerClientReadOnly();
+  const supabase = createSupabaseServerClient();
 
   const yesterdayText = formData.get("yesterday_text") as string;
   const todayText = formData.get("today_text") as string;

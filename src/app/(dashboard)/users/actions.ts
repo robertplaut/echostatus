@@ -1,13 +1,13 @@
 // file: src/app/(dashboard)/users/actions.ts
 "use server";
 
-import { createSupabaseServerClientReadOnly } from "@/lib/supabase/server";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 export async function createUser(formData: FormData) {
   // Use the read-only client to avoid cookie-related errors for this public action
-  const supabase = createSupabaseServerClientReadOnly();
+  const supabase = createSupabaseServerClient();
 
   const githubUsername = formData.get("github-username") as string;
 

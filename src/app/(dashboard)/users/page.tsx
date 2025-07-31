@@ -1,6 +1,6 @@
 // file: src/app/(dashboard)/users/page.tsx
 import Link from "next/link";
-import { createSupabaseServerClientReadOnly } from "@/lib/supabase/server";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { UserCard, type User } from "@/components/user-card";
 
 // Helper function to group users by team
@@ -16,7 +16,7 @@ function groupUsersByTeam(users: User[]): Record<string, User[]> {
 }
 
 export default async function UserListPage() {
-  const supabase = createSupabaseServerClientReadOnly();
+  const supabase = createSupabaseServerClient();
   const { data: users, error } = await supabase
     .from("users")
     .select("id, display_name, username, team, role")

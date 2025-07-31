@@ -3,18 +3,10 @@
 
 import { useEffect, useState, useActionState } from "react";
 import { useFormStatus } from "react-dom";
-import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import { saveNote } from "@/app/(dashboard)/standup-notes/actions";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -29,6 +21,9 @@ type Note = {
 interface StandupFormProps {
   userId: string;
   existingNote: Note | null;
+  selectedDate: string;
+  onDateChange: (newDate: string) => void;
+  onNoteSaved: () => void;
 }
 
 const initialState = {
@@ -45,27 +40,29 @@ function SubmitButton() {
   );
 }
 
-export function StandupForm({ userId, existingNote }: StandupFormProps) {
-  const today = new Date().toISOString().split("T")[0];
+export function StandupForm({
+  userId,
+  existingNote,
+  selectedDate,
+  onDateChange,
+  onNoteSaved,
+}: StandupFormProps) {
   const [state, formAction] = useActionState(saveNote, initialState);
-  const router = useRouter();
 
-  // Create local state for each form field, initialized by the prop
   const [yesterday, setYesterday] = useState(
-    existingNote?.yesterday_text || ""
+    existingNote?.yesterday_text ?? ""
   );
-  const [todayText, setTodayText] = useState(existingNote?.today_text || "");
-  const [blockers, setBlockers] = useState(existingNote?.blockers_text || "");
+  const [todayText, setTodayText] = useState(existingNote?.today_text ?? "");
+  const [blockers, setBlockers] = useState(existingNote?.blockers_text ?? "");
   const [learnings, setLearnings] = useState(
-    existingNote?.learnings_text || ""
+    existingNote?.learnings_text ?? ""
   );
 
-  // This effect SYNCS the local state if the server data changes
   useEffect(() => {
-    setYesterday(existingNote?.yesterday_text || "");
-    setTodayText(existingNote?.today_text || "");
-    setBlockers(existingNote?.blockers_text || "");
-    setLearnings(existingNote?.learnings_text || "");
+    setYesterday(existingNote?.yesterday_text ?? "");
+    setTodayText(existingNote?.today_text ?? "");
+    setBlockers(existingNote?.blockers_text ?? "");
+    setLearnings(existingNote?.learnings_text ?? "");
   }, [existingNote]);
 
   useEffect(() => {
@@ -73,37 +70,37 @@ export function StandupForm({ userId, existingNote }: StandupFormProps) {
       toast.success("Success!", {
         description: "Your standup note has been saved.",
       });
-      router.refresh();
+      onNoteSaved();
     } else if (state.error) {
       toast.error("Error", {
         description: state.error.message,
       });
     }
-  }, [state, router]);
+  }, [state, onNoteSaved]);
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Daily Standup Note</CardTitle>
-        <CardDescription>
+    <div className="rounded-lg border bg-card text-card-foreground shadow-sm">
+      <div className="flex flex-col space-y-1.5 p-6 bg-muted/50 border-b">
+        <h3 className="text-2xl font-semibold leading-none tracking-tight">
+          Daily Standup Note
+        </h3>
+        <p className="text-sm text-muted-foreground">
           All fields are optional, but at least one must be used to save.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
+        </p>
+      </div>
+      <div className="p-6 pt-4">
         <form action={formAction} className="space-y-4">
           <input type="hidden" name="user_id" value={userId} />
-          <input type="hidden" name="date" value={today} />
-
+          <input type="hidden" name="date" value={selectedDate} />
           <div className="space-y-2">
             <Label htmlFor="date-display">Date</Label>
             <Input
               id="date-display"
               type="date"
-              defaultValue={today}
-              disabled
+              value={selectedDate}
+              onChange={(e) => onDateChange(e.target.value)}
             />
           </div>
-
           <div className="space-y-2">
             <Label htmlFor="yesterday">
               What did you accomplish yesterday?
@@ -146,12 +143,11 @@ export function StandupForm({ userId, existingNote }: StandupFormProps) {
               onChange={(e) => setLearnings(e.target.value)}
             />
           </div>
-
           <div className="flex justify-end">
             <SubmitButton />
           </div>
         </form>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
