@@ -1,8 +1,9 @@
 // file: src/app/(dashboard)/layout.tsx
-import React from "react";
+import React, { Suspense } from "react";
 import Link from "next/link";
-import { Home, UserPlus, Users } from "lucide-react";
 import { ModeToggle } from "@/components/mode-toggle";
+import { UserSwitcher } from "@/components/user-switcher";
+import { NavLinks } from "@/components/nav-links";
 
 export default function DashboardLayout({
   children,
@@ -23,27 +24,9 @@ export default function DashboardLayout({
             </Link>
           </div>
           <nav className="flex-1 grid items-start px-2 text-sm font-medium lg:px-4">
-            <Link
-              href="/"
-              className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
-            >
-              <Home className="h-4 w-4" />
-              Home
-            </Link>
-            <Link
-              href="/users"
-              className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
-            >
-              <Users className="h-4 w-4" />
-              User List
-            </Link>
-            <Link
-              href="/users/create"
-              className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
-            >
-              <UserPlus className="h-4 w-4" />
-              Create User
-            </Link>
+            <Suspense fallback={<div>Loading links...</div>}>
+              <NavLinks />
+            </Suspense>
           </nav>
         </div>
       </aside>
@@ -56,7 +39,10 @@ export default function DashboardLayout({
             {/* Page title will go here */}
             Home
           </div>
-          <div>
+          <div className="flex items-center gap-4">
+            <Suspense fallback={<div>Loading...</div>}>
+              <UserSwitcher />
+            </Suspense>
             <ModeToggle />
           </div>
         </header>
