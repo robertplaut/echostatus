@@ -12,7 +12,24 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { createUser } from "@/app/(dashboard)/users/actions";
+
+const TEAMS = ["PMO", "PRODUCT", "ENGINEERING"];
+const ROLES = [
+  "Engineer",
+  "Program Manager",
+  "Senior Director of Engineering",
+  "Senior Product Manager",
+  "VP of PMO",
+  "VP of Product",
+];
 
 export default function CreateUserPage() {
   return (
@@ -69,23 +86,35 @@ export default function CreateUserPage() {
                 <Label htmlFor="team">
                   Team <span className="text-destructive">*</span>
                 </Label>
-                <Input
-                  id="team"
-                  name="team"
-                  placeholder="Enter team"
-                  required
-                />
+                <Select name="team" required>
+                  <SelectTrigger id="team">
+                    <SelectValue placeholder="Select a team" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {TEAMS.map((team) => (
+                      <SelectItem key={team} value={team}>
+                        {team}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="role">
                   Role <span className="text-destructive">*</span>
                 </Label>
-                <Input
-                  id="role"
-                  name="role"
-                  placeholder="Enter role"
-                  required
-                />
+                <Select name="role" required>
+                  <SelectTrigger id="role">
+                    <SelectValue placeholder="Select a role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ROLES.map((role) => (
+                      <SelectItem key={role} value={role}>
+                        {role}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="github-username">GitHub Username</Label>
