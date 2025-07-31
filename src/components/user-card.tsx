@@ -8,7 +8,6 @@ import {
 } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
-// Define a type for our user object for better type safety
 export type User = {
   id: string;
   display_name: string | null;
@@ -22,14 +21,19 @@ interface UserCardProps {
 }
 
 export function UserCard({ user }: UserCardProps) {
-  // DiceBear provides free, fun, and unique avatars based on a seed string.
-  // We'll use the user's unique username as the seed.
-  const avatarUrl = `https://api.dicebear.com/8.x/lorelei/svg?seed=${user.username}`;
+  const avatarUrl = `https://api.dicebear.com/8.x/bottts/svg?seed=${user.username}`;
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center gap-4">
+    // Apply h-full to the Card component to make it stretch to the grid item height
+    <Card className="h-full flex flex-col">
+      {" "}
+      {/* flex flex-col helps manage internal layout */}
+      <CardHeader className="h-full flex items-center gap-4">
+        {" "}
+        {/* Ensure header also stretches */}
+        <div className="flex items-center gap-4 w-full">
+          {" "}
+          {/* Added w-full to ensure children use available space */}
           <Avatar>
             <AvatarImage
               src={avatarUrl}
@@ -39,12 +43,21 @@ export function UserCard({ user }: UserCardProps) {
               {user.display_name?.charAt(0) || user.username.charAt(0)}
             </AvatarFallback>
           </Avatar>
-          <div>
+          <div className="flex-1 min-w-0">
+            {" "}
+            {/* flex-1 to take remaining space, min-w-0 for text overflow */}
             <CardTitle>{user.display_name || "Unnamed User"}</CardTitle>
-            <CardDescription>{user.role}</CardDescription>
+            {/* Limit the height of the description and handle overflow */}
+            <CardDescription className="block overflow-hidden text-ellipsis whitespace-nowrap">
+              {" "}
+              {/* Added classes to handle potential overflow */}
+              {user.role}
+            </CardDescription>
           </div>
         </div>
       </CardHeader>
+      {/* We don't have CardContent being used for critical data yet, but if we did,
+          it would also need to be managed for height. For now, the header controls most of it. */}
     </Card>
   );
 }
