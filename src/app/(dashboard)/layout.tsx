@@ -1,9 +1,8 @@
 // file: src/app/(dashboard)/layout.tsx
 import React, { Suspense } from "react";
 import Link from "next/link";
-import { ModeToggle } from "@/components/mode-toggle";
-import { UserSwitcher } from "@/components/user-switcher";
 import { NavLinks } from "@/components/nav-links";
+import { DashboardHeader } from "@/components/dashboard-header";
 
 export default function DashboardLayout({
   children,
@@ -35,20 +34,7 @@ export default function DashboardLayout({
 
       {/* Main Content Area */}
       <div className="flex flex-col sm:gap-4 sm:py-4 sm:pl-60">
-        {/* Header */}
-        <header className="sticky top-0 z-30 flex h-14 items-center justify-between gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
-          <div className="font-semibold">
-            {/* Page title will go here */}
-            Home
-          </div>
-          <div className="flex items-center gap-4">
-            <Suspense fallback={<div>Loading...</div>}>
-              <UserSwitcher />
-            </Suspense>
-            <ModeToggle />
-          </div>
-        </header>
-
+        <DashboardHeader />
         {/* Page Content */}
         {children}
       </div>
