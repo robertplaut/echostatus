@@ -3,8 +3,23 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Home, UserPlus, Users, FileText, Github, UserCog } from "lucide-react";
-import { Separator } from "@/components/ui/separator";
+import { Home, UserPlus, Users, FileText, UserCog } from "lucide-react";
+import { Separator } from "@/components/ui/separator"; // Ensure this import is present
+import { siGithub } from "simple-icons"; // Corrected import
+
+// Define a custom icon component for simple-icons
+const GitHubIcon = () => (
+  <svg
+    role="img"
+    viewBox="0 0 24 24"
+    xmlns="http://www.w3.org/2000/svg"
+    className="h-4 w-4"
+    fill={siGithub.hex}
+  >
+    <title>{siGithub.title}</title>
+    <path d={siGithub.path} />
+  </svg>
+);
 
 const primaryLinks = [
   { name: "Home", href: "/", icon: Home },
@@ -14,7 +29,7 @@ const primaryLinks = [
 
 const userLinks = [
   { name: "Standup Notes", href: "/standup-notes", icon: FileText },
-  { name: "GitHub PRs", href: "/github-prs", icon: Github },
+  { name: "GitHub PRs", href: "/github-prs", icon: GitHubIcon }, // Use the new icon component
   { name: "Edit Profile", href: "/edit-profile", icon: UserCog },
 ];
 
@@ -47,7 +62,7 @@ export function NavLinks() {
 
       {userId && (
         <>
-          <Separator className="my-2" />
+          <Separator className="my-2" /> {/* Separator is used here */}
           {userLinks.map((link) => {
             const LinkIcon = link.icon;
             return (
